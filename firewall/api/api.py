@@ -1,5 +1,6 @@
 import flask
 import logging
+import ipaddress
 
 from flask import json
 from db_table_defs import DBIPAddresses
@@ -14,32 +15,43 @@ app.logger.handlers = gunicorn_logger.handlers
 app.logger.setLevel(gunicorn_logger.level)
 
 
-@app.route('/killroute/<ip_address>', methods=['PUT','DELETE'])
-def killroute(ip_address):
+@app.route('/killroute/<ip>', methods=['PUT','DELETE'])
+def killroute(ip):
 
 	method = flask.request.method
-	app.logger.debug('%s killroute(%s)', method, ip_address)
+	app.logger.debug('%s killroute(%s)', method, ip)
 	
-	if method == 'PUT':
+	try:
+		ipaddress.ip_address(ip)
+	except ipaddress.ValueError as exc:
+		app.logger.error('%s is not a valid IP address', ip)
+		raise exc
 
-		if route_exists(ip_address):
-			app.logger.debug('%s route %s already exists.', method, ip_address)
+
+	if method == 'PUT':
+		
+		if route_exists(ip):
+			app.logger.debug('%s route %s already exists.', method, ip)
 			return flask.Response(status=200)
 		else:
-			return write(ip_address)
+			return write(ip)
 
 	elif method == 'DELETE':
-		
-		return delete(ip_address)
+
+		if route_exists(ip):
+			return delete(ip)
+		else:
+			app.logger.debug('%s route %s does not exist.', method, ip)
+			return flask.Response(status=200)
 
 
-def route_exists(ip_address):
+def route_exists(ip):
 	try:
 	
 		session_maker = get_session_maker()
 		session = session_maker()
 		ipquery = session.query(DBIPAddresses)
-		query_ip = ipquery.get({"ip":ip_address})
+		query_ip = ipquery.get({"ip":ip})
 		
 		return query_ip != None
 
@@ -76,14 +88,14 @@ def getallroutes():
 		raise exc
 
 
-def write(ip_address):
-	app.logger.debug('write(%s)', ip_address)
+def write(ip):
+	app.logger.debug('write(%s)', ip)
 	
 	try:
 		
 		session_maker = get_session_maker()
 		session = session_maker()
-		ipentry = DBIPAddresses(ip=ip_address)
+		ipentry = DBIPAddresses(ip=ip)
 		session.add(ipentry)
 		session.commit()
 
@@ -94,15 +106,15 @@ def write(ip_address):
 		raise exc
 
 
-def delete(ip_address):
-	app.logger.debug('delete(%s)', ip_address)
+def delete(ip):
+	app.logger.debug('delete(%s)', ip)
 	
 	try:
 		
 		session_maker = get_session_maker()
 		session = session_maker()
 		ipquery = session.query(DBIPAddresses)
-		ipentry = ipquery.get({"ip":ip_address})
+		ipentry = ipquery.get({"ip":ip})
 		session.delete(ipentry)
 		session.commit()
 
