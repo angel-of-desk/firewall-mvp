@@ -1,0 +1,31 @@
+version: "3.7"
+services:
+
+  api:
+    build:
+      context: api
+    hostname: api
+    ports:
+      - "5000:5000"
+    restart: on-failure
+    environment:
+      POSTGRES_ADDRESS: postgres-db
+      POSTGRES_DB: ipaddresses
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    networks:
+      mynet:
+
+  postgres-db:
+    image: postgres
+    hostname: postgres-db
+    restart: on-failure
+    environment:
+      POSTGRES_DB: ipaddresses
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    networks:
+      mynet:
+
+networks:
+  mynet:
