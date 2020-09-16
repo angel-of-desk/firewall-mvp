@@ -5,6 +5,8 @@ Lightweight MVP for flask-postgress firewall API
 
 ### Build
 
+From `firewall` directory
+
 ```bash
 docker-compose up --build
 ```

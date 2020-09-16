@@ -23,7 +23,7 @@ def killroute(ip):
 	
 	try:
 		ipaddress.ip_address(ip)
-	except ipaddress.ValueError as exc:
+	except ValueError as exc:
 		app.logger.error('%s is not a valid IP address', ip)
 		raise exc
 
