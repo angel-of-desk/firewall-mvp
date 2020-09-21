@@ -26,7 +26,7 @@ class RuleIP(sql_base):
     ip      = Column(String)
 
     def set_value(self, rule_value):
-        ip = rule_value
+        self.ip = rule_value
 
     def serialize(self):
         return {
@@ -47,7 +47,7 @@ class RuleDNS(sql_base):
     dns     = Column(String)
 
     def set_value(self, rule_value):
-        dns = rule_value
+        self.dns = rule_value
 
     def serialize(self):
         return {

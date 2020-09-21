@@ -128,7 +128,6 @@ def check_rule_exists(rule_json):
     return False
 
 
-
 def get_existing_rule(rule_json):
 
     try:
