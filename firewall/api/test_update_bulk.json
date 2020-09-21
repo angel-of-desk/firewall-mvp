@@ -1,0 +1,20 @@
+{
+  "action": "update",
+  "rules": [
+    {
+      "type": "ip",
+      "id": 2,
+      "trusted": "false",
+      "name": "Provisional IP",
+      "ip": "192.168.1.2" 
+
+    },
+    {
+      "type": "dns",
+      "id": 2,
+      "trusted": "false",
+      "name": "Don't Be Evil LOL!",
+      "dns": ".google.com"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "action": "delete",
+  "rules": [
+    {
+      "type": "ip",
+      "id": 1,
+      "trusted": "false",
+      "name": "Bad IP",
+      "ip": "192.168.1.1" 
+
+    },
+    {
+      "type": "dns",
+      "id": 1,
+      "trusted": "true",
+      "name": "Wow such trust",
+      "dns": ".piratebay.org"
+    }
+  ]
+}

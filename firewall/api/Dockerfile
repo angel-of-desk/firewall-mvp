@@ -16,9 +16,12 @@ RUN apt-get update \
       sqlalchemy \
       sqlalchemy-utils
 
-ENV FLASK_APP=api.py
+ENV FLASK_APP=firewall_rules.py
 
-COPY api.py .
-COPY db_table_defs.py .
+COPY firewall_rules.py .
+COPY firewall_table_defs.py .
+COPY firewall_rule_response.py .
+COPY firewall_constants.py .
+COPY json_bad_request.py .
 
-ENTRYPOINT [ "gunicorn", "api:app", "--bind", "0.0.0.0:5000"]
+ENTRYPOINT [ "gunicorn", "firewall_rules:app", "--bind", "0.0.0.0:5000"]

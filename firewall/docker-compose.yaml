@@ -10,7 +10,9 @@ services:
     restart: on-failure
     environment:
       POSTGRES_ADDRESS: postgres-db
-      POSTGRES_DB: ipaddresses
+      POSTGRES_DATABASE: firewall-rules
+      POSTGRES_TABLE_IP: firewall-table-ip
+      POSTGRES_TABLE_DNS: firewall-table-dns
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     networks:
@@ -21,7 +23,7 @@ services:
     hostname: postgres-db
     restart: on-failure
     environment:
-      POSTGRES_DB: ipaddresses
+      POSTGRES_DATABASE: firewall-rules
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     networks:
