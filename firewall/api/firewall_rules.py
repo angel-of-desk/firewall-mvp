@@ -2,9 +2,7 @@ import flask
 import logging
 import ipaddress
 
-from flask import Request, json
-from sqlalchemy import String
-from sqlalchemy.sql import exists
+from flask import json
 from sqlalchemy.exc import IntegrityError
 
 from firewall_constants import Keyword, Action
@@ -22,7 +20,9 @@ app.logger.setLevel(gunicorn_logger.level)
 
 @app.route('/rules', methods=['POST'])
 def rules():
-
+    """
+    CRUD endpoint which processes JSON firewall rule requests.
+    """
     try:    
         json = flask.request.get_json()
     except JSONBadRequest as e:
@@ -33,7 +33,7 @@ def rules():
     rule_response = None
 
     if action == Action.READ:
-        existing_rules = read_existing_rules(json[Keyword.TYPE])
+        existing_rules = _read_existing_rules(json[Keyword.TYPE])
         rule_response = RuleResponse(status=200, name='Request Successful', body=existing_rules)
         return rule_response.generate_response()
     else:
@@ -41,7 +41,7 @@ def rules():
 
         try:
             for rule_json in rules:
-                process_rule_json(action, rule_json)
+                _process_rule_json(action, rule_json)
         except RuleException as e:
             return e.generate_response()
 
@@ -49,24 +49,29 @@ def rules():
         return rule_response.generate_response()
     
 
-def process_rule_json(action, rule_json):
-
+def _process_rule_json(action, rule_json):
+    """
+    Routes actions to corresponding methods for existing rules.
+    """
     if action == Action.CREATE:
         
-        if not check_rule_exists(rule_json):
-            rule_instance = create_new_rule(rule_json)
+        if not _check_rule_exists(rule_json):
+            rule_instance = _create_new_rule(rule_json)
             rule_json[Keyword.ID] = rule_instance.id
 
     elif action == Action.UPDATE:
-        update_existing_rule(rule_json)
+        _update_existing_rule(rule_json)
     elif action == Action.DELETE:
-        delete_rule(rule_json)
+        _delete_rule(rule_json)
     else:
         error_description = f"\'{action}\' is not valid."
         raise RuleException(status=400, name='Unhandled Action', error=error_description)
 
 
-def get_rule_class(rule_type):
+def _get_rule_class(rule_type):
+    """
+    Returns a class based on rule type
+    """
 
     if rule_type == Keyword.IP:    
         return RuleIP
@@ -77,10 +82,13 @@ def get_rule_class(rule_type):
         raise RuleException(status=400, name='Unhandled Rule Type', error=error_description)
 
 
-def get_rule_instance(rule_json):
+def _get_rule_instance(rule_json):
+    """
+    Creates and returns an instance of a rule class initialized with rule parameters.
+    """
 
     rule_type     = rule_json[Keyword.TYPE]
-    rule_class    = get_rule_class(rule_type)
+    rule_class    = _get_rule_class(rule_type)
     rule_name     = rule_json[Keyword.NAME]
     rule_value    = rule_json[rule_type]
     rule_trusted  = rule_json[Keyword.TRUSTED]
@@ -90,10 +98,12 @@ def get_rule_instance(rule_json):
     return rule_instance
 
 
-def create_new_rule(rule_json):
-    
-    rule_instance = get_rule_instance(rule_json)
+def _create_new_rule(rule_json):
+    """
+    Writes a new rule to the corresponding table based on the '__tablename__' property of rule_class.
+    """
 
+    rule_instance = _get_rule_instance(rule_json)
     try:
         session = get_session()
         session.add(rule_instance)
@@ -104,11 +114,14 @@ def create_new_rule(rule_json):
     except (IntegrityError, Exception) as e:
         raise RuleException(status=500, name='Rule Create Error', error=str(e))
 
-def check_rule_exists(rule_json):
+def _check_rule_exists(rule_json):
+    """
+    Checks for the existence of a rule basd on the value of the rule.
+    """
     
     rule_type  = rule_json[Keyword.TYPE]
     rule_value = rule_json[rule_type]
-    rule_class = get_rule_class(rule_type)
+    rule_class = _get_rule_class(rule_type)
     session    = get_session()
 
     if rule_type == Keyword.IP:
@@ -117,19 +130,20 @@ def check_rule_exists(rule_json):
         query = session.query(rule_class).filter(rule_class.dns == rule_value)
 
     if session.query(query.exists()).scalar():
-        error_description = f"Rule for type:\'{rule_type}\' with value:\'{rule_value}\' already exists."
+        error_description = "One or more rules in request already already exists."
         raise RuleException(status=400, name='Rule Already Exists', error=error_description)
 
     return False
 
 
-def get_existing_rule(rule_json):
-
+def _get_existing_rule(rule_json):
+    """
+    Queries the database for a rule based on provided 'id' property in the rule JSON.
+    """
     try:
-        
         rule_type  = rule_json[Keyword.TYPE]
         rule_id    = rule_json[Keyword.ID]
-        rule_class = get_rule_class(rule_type)
+        rule_class = _get_rule_class(rule_type)
         session    = get_session()
         query      = session.query(rule_class)
 
@@ -139,9 +153,11 @@ def get_existing_rule(rule_json):
         raise RuleException(status=500, name='Rule Query Error', error=str(e))
 
 
-def read_existing_rules(rule_type):
-    
-    rule_class = get_rule_class(rule_type)
+def _read_existing_rules(rule_type):
+    """
+    Queries the database for all rows in a table based on the '__tablename__' property of the rule_class.
+    """
+    rule_class = _get_rule_class(rule_type)
 
     try:
         session       = get_session()
@@ -154,10 +170,12 @@ def read_existing_rules(rule_type):
         raise RuleException(status=500, name='Rule Query Error', error=str(e))
 
 
-def update_existing_rule(rule_json):
-
+def _update_existing_rule(rule_json):
+    """
+    Modifies the 'name' and 'trusted' fields of a rule stored in the database.
+    """
     session       = get_session()
-    rule_instance = get_existing_rule(rule_json)
+    rule_instance = _get_existing_rule(rule_json)
 
     if rule_instance != None:
 
@@ -173,10 +191,12 @@ def update_existing_rule(rule_json):
         raise RuleException(status=400, name='Rule Does Not Exist', error=error_description)
 
 
-def delete_rule(rule_json):
-
+def _delete_rule(rule_json):
+    """
+    Deletes a rule from a table, if it exists.
+    """
     session       = get_session()
-    rule_instance = get_existing_rule(rule_json)
+    rule_instance = _get_existing_rule(rule_json)
 
     if rule_instance != None:
         
