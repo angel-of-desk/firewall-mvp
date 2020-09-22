@@ -155,29 +155,38 @@ def read_existing_rules(rule_type):
 
 
 def update_existing_rule(rule_json):
-    
-    try:
-        session       = get_session()
-        rule_instance = get_existing_rule(rule_json)
 
-        if rule_instance != None:
+    session       = get_session()
+    rule_instance = get_existing_rule(rule_json)
+
+    if rule_instance != None:
+
+        try:
             rule_instance.name    = rule_json[Keyword.NAME]
             rule_instance.trusted = rule_json[Keyword.TRUSTED]
             session.commit()
+        except (IntegrityError, Exception) as e:
+            raise RuleException(status=500, name='Rule Update Error', error=str(e))
 
-    except (IntegrityError, Exception) as e:
-        raise RuleException(status=500, name='Rule Update Error', error=str(e))
+    else:
+        error_description = 'Attempt to update rule with invalid id.'
+        raise RuleException(status=400, name='Rule Does Not Exist', error=error_description)
 
 
 def delete_rule(rule_json):
-    
-    try:      
-        session       = get_session()
-        rule_instance = get_existing_rule(rule_json)
 
-        if rule_instance != None:
+    session       = get_session()
+    rule_instance = get_existing_rule(rule_json)
+
+    if rule_instance != None:
+        
+        try:
             session.delete(rule_instance)
             session.commit()
+        except Exception as e:
+            raise RuleException(status=500, name='Rule Delete Error', error=str(e))
 
-    except Exception as exc:
-       raise RuleException(status=500, name='Rule Delete Error', error=str(e))
+    else:
+        error_description = 'Attempt to delete rule with invalid id'
+        raise RuleException(status=400, name='Rule Does Not Exist', error=error_description)
+
