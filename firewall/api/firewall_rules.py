@@ -116,11 +116,6 @@ def check_rule_exists(rule_json):
     elif rule_type == Keyword.DNS:
         query = session.query(rule_class).filter(rule_class.dns == rule_value)
 
-    app.logger.error(rule_value)
-    app.logger.error(session.query(query.exists()).scalar())
-    app.logger.error(session.query(query.exists()))
-    app.logger.error("--------")
-
     if session.query(query.exists()).scalar():
         error_description = f"Rule for type:\'{rule_type}\' with value:\'{rule_value}\' already exists."
         raise RuleException(status=400, name='Rule Already Exists', error=error_description)
